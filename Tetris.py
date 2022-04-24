@@ -178,6 +178,9 @@ class Piece(object):
         self.x += 1
     def MovePieceDown(self):
         self.y += 1
+    def MovePiece(self, x, y):
+        self.x = x
+        self.y = y
     
     
 class BoardSquare(object):
@@ -198,7 +201,7 @@ class Board(object):
     score = 0
 
     # Checks if any squares have more than 1 piece in it
-    def CheckIfLost(self):
+    def CheckInterSections(self):
         for x in range(10):
             for y in range(20):
                 if self.board[y][x].numOccupied > 1:
@@ -214,8 +217,6 @@ class Board(object):
                     if (self.currentPiece.x + x) >= 10 or (self.currentPiece.x + x) < 0 or (self.currentPiece.y + y) >= 19:
                         return True        
 
-
-
     # Returns True if location of piece is not occupied
     def GenerateNewPiece(self, isHoldPiece):
         if not isHoldPiece:
@@ -230,7 +231,7 @@ class Board(object):
         else:
             self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
         
-        if self.CheckIfLost():
+        if self.CheckInterSections():
             return False
         else:
             return True
@@ -304,7 +305,7 @@ class Board(object):
 
     def MoveDown(self):
         self.currentPiece.MovePieceDown()
-        if self.CheckBoundaries():
+        if self.CheckBoundaries() or self.CheckInterSections():
             self.GenerateNewPiece(False)
     def MoveLeft(self):
         self.currentPiece.MovePieceLeft()
@@ -315,6 +316,10 @@ class Board(object):
         self.currentPiece.MovePieceRight()
         if self.CheckBoundaries():
             self.currentPiece.MovePieceLeft()
+
+
+    def MovePiece(self, x, y):
+        self.currentPiece.SetLocation(x, y)
 
     def RotateClockWise(self):
         self.currentPiece.RotateClockwise()
@@ -363,6 +368,7 @@ if __name__ == "__main__":
                     # TODO Pause menu
                     running = False
                 elif event.key == pygame.K_SPACE:
+                    board.MovePiece(board.CalculatePieceGhostPostion())
                     # instant place
                     pass
                 elif event.key == pygame.K_e:
