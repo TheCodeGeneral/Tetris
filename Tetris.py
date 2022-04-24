@@ -24,9 +24,9 @@ class Piece(object):
              "  XX",
              " XX ",
              "    "],
-            [" X  ",
-             " XX ",
-             "  X ",
+            ["  X ",
+             "  XX",
+             "   X",
              "    "]
         ],
     "Z" : [
@@ -34,20 +34,20 @@ class Piece(object):
              " XX ",
              "  XX",
              "    "],
-            ["  X ",
-             " XX ",
-             " X  ",
+            ["   X",
+             "  XX",
+             "  X ",
              "    "]
          ],
     "I" : [
-            [" X  ",
-             " X  ",
-             " X  ",
-             " X  "],
             ["    ",
              "XXXX",
              "    ",
-             "    "]
+             "    "],
+            ["  X ",
+             "  X ",
+             "  X ",
+             "  X "]
         ],
     "Square" : [["    ",
                  " XX ",
@@ -55,58 +55,57 @@ class Piece(object):
                  "    "]],
     "J" : [
             ["    ",
-             " X  ",
              " XXX",
+             "   X",
              "    "],
-            ["    ",
+            ["  X ",
+             "  X ",
              " XX ",
-             " X  ",
-             " X  "],
-            ["    ",
-             "    ",
+             "    "],
+            [" X  ",
              " XXX",
-             "   X"],
-            ["    ",
+             "    ",
+             "    "],
+            ["  XX",
              "  X ",
              "  X ",
-             " XX ",
              "    "]
         ], 
     "L" : [
             ["    ",
-             "   X",
-             " XXX",
-             "    "],
-            ["    ",
-             " X  ",
-             " X  ",
-             " XX "],
-            ["    ",
              " XXX",
              " X  ",
              "    "],
-            ["    ",
-             " XX ",
+            [" XX ",
              "  X ",
-             "  X "]
+             "  X ",
+             "    "],
+            ["   X",
+             " XXX",
+             "    ",
+             "    "],
+            ["  X ",
+             "  X ",
+             "  XX",
+             "    "]
         ], 
     "T" : [
             ["    ",
-             "  X ",
-             " XXX",
-             "    "],
-            ["    ",
-             "  X ",
-             "  XX",
-             "  X "],
-            ["    ",
              " XXX",
              "  X ",
              "    "],
-            ["    ",
-             "  X ",
+            ["  X ",
              " XX ",
-             "  X "]
+             "  X ",
+             "    "],
+            ["  X ",
+             " XXX",
+             "    ",
+             "    "],
+            ["  X ",
+             "  XX",
+             "  X ",
+             "    ",]
         ]
     } 
 
@@ -179,13 +178,9 @@ class Piece(object):
         self.x += 1
     def MovePieceDown(self):
         self.y += 1
-        
-    def CheckForCollision(self):
-        pass
-        return True
     
     
-class dumb(object):
+class BoardSquare(object):
     PieceColor = None
     numOccupied = None
     def __init__(self, PieceColor, numOccupied):
@@ -193,23 +188,35 @@ class dumb(object):
         self.numOccupied = numOccupied
 
 class Board(object):
-    # Create 2d array of booleans of size 10x24 for tetris board
-    # True defines that space is occupied, false defines it is unoccupied
-    board = [[dumb((0,0,0), 0) for y in range(24)] for x in range(10)]
+    # Create 2d array of BoardSquares of size 10x20 for tetris board
+    # Num Occupied = 1 defines that space is occupied, 0 defines it is unoccupied, numOccupied > 1 means pieces are intersecting
+    board = [[BoardSquare((0,0,0), 0) for x in range(10)] for y in range(20)]
     oldPieces = []
     
     currentPiece = None
     holdPiece = None
     score = 0
+
+    # Checks if any squares have more than 1 piece in it
     def CheckIfLost(self):
-        # If piece is in the top 4 rows end game
         for x in range(10):
-            for y in range(4):
-                if self.board[x][y].numOccupied == 1:
+            for y in range(20):
+                if self.board[y][x].numOccupied > 1:
                     return True
         
         return False
                 
+    # Check if piece will go out of bounds
+    def CheckBoundaries(self):
+        for x in range(len(self.currentPiece.currentShape[0])):
+            for y in range(len(self.currentPiece.currentShape)):
+                if self.currentPiece.currentShape[y][x] == 'X':
+                    if (self.currentPiece.x + x) >= 10 or (self.currentPiece.x + x) < 0 or (self.currentPiece.y + y) >= 19:
+                        return True        
+
+
+
+    # Returns True if location of piece is not occupied
     def GenerateNewPiece(self, isHoldPiece):
         if not isHoldPiece:
             if self.currentPiece != None:
@@ -223,8 +230,10 @@ class Board(object):
         else:
             self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
         
-        #if CheckIfLost(self):
-           # holdPiece = None
+        if self.CheckIfLost():
+            return False
+        else:
+            return True
         
     def DrawPiece(self, piece):
         for x in range(len(piece.currentShape[0])):
@@ -292,20 +301,47 @@ class Board(object):
         # expecting index out of bounds
         except:
             pass
+
+    def MoveDown(self):
+        self.currentPiece.MovePieceDown()
+        if self.CheckBoundaries():
+            self.GenerateNewPiece(False)
+    def MoveLeft(self):
+        self.currentPiece.MovePieceLeft()
+        if self.CheckBoundaries():
+            self.currentPiece.MovePieceRight()
+        
+    def MoveRight(self):
+        self.currentPiece.MovePieceRight()
+        if self.CheckBoundaries():
+            self.currentPiece.MovePieceLeft()
+
+    def RotateClockWise(self):
+        self.currentPiece.RotateClockwise()
+
+    def RotateCounterClockWise(self):
+        self.currentPiece.RotateCouterClockwise()
+
+    def HoldPiece(self):
+        if not board.GenerateNewPiece(True):
+            # Game Over
+            pass
+
  
 if __name__ == "__main__":
     # Initialize game window
-    
     pygame.init()
     pygame.font.init()
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
     
+    # Initilize Board
     board = Board()
     board.GenerateNewPiece(False)
     running = True
     
+    # Initialize block move timer
     move_down_event = pygame.USEREVENT
     moveDownTick = 1000
     pygame.time.set_timer(move_down_event, moveDownTick)
@@ -326,43 +362,34 @@ if __name__ == "__main__":
                 if event.key == pygame.K_ESCAPE:
                     # TODO Pause menu
                     running = False
-                # - start moving -
                 elif event.key == pygame.K_SPACE:
                     # instant place
                     pass
                 elif event.key == pygame.K_e:
                     # rotate clockwise
-                    board.currentPiece.RotateClockwise()
-                    pass
+                    board.RotateClockWise()
+
                 elif event.key == pygame.K_q:
                     # rotate couter clockwise
-                    board.currentPiece.RotateCouterClockwise()
-                    pass
-            elif event.type == move_down_event:
-                board.currentPiece.MovePieceDown()
+                    board.RotateCounterClockWise()
 
+            # Block move timed event
+            elif event.type == move_down_event:
+               board.MoveDown()
+
+        # Check if key is held down for movement
         keys = pygame.key.get_pressed()
         if keys[pygame.K_DOWN]:
             # move piece downward faster
-            board.currentPiece.MovePieceDown()
-            pass
+            board.MoveDown()
         if keys[pygame.K_LEFT]:
             # move piece left while held
-            board.currentPiece.MovePieceLeft()
-            pass
+            board.MoveLeft()
+
         if keys[pygame.K_RIGHT]:
             # move piece right while held
-            board.currentPiece.MovePieceRight()
+            board.MoveRight()
+
         # --- updates ---
         pygame.display.update()
         clock.tick(15)
-
-        #board.currentPiece.MovePieceDown()
-
-
-        ## board.currentPiece.MoveDown()
-        ## board.CheckCollisions
-        ##
-        ##
-        ##
-        ##
