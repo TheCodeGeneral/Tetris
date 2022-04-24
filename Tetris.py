@@ -173,10 +173,10 @@ class Piece(object):
 
     def MovePieceLeft(self):
         # TODO Check for collision
-        self.x += 1
+        self.x -= 1
     def MovePieceRight(self):
         # TODO Check for collision
-        self.x -= 1
+        self.x += 1
     def MovePieceDown(self):
         self.y += 1
         
@@ -282,7 +282,7 @@ class Board(object):
         tetrisCheck = 0
         try:
             for i in range(1, len(rowsComplete)):
-                if rowsComplete[i-1] + 1 == rowsComplete[i]:
+                if rowsComplete[i - 1] + 1 == rowsComplete[i]:
                     tetrisCheck += 1
                 else:
                     tetrisCheck = 0
@@ -295,21 +295,25 @@ class Board(object):
  
 if __name__ == "__main__":
     # Initialize game window
+    
     pygame.init()
     pygame.font.init()
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
     
-    
-    
     board = Board()
     board.GenerateNewPiece(False)
     running = True
     
+    move_down_event = pygame.USEREVENT
+    moveDownTick = 1000
+    pygame.time.set_timer(move_down_event, moveDownTick)
+
     while running:
 
         # --- events ---
+        screen.fill((0,0,0))
         board.DrawGrid()
         board.DrawBoard()
         board.DrawHoldBox()
@@ -320,33 +324,42 @@ if __name__ == "__main__":
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    # TODO Pause menu
                     running = False
                 # - start moving -
                 elif event.key == pygame.K_SPACE:
                     # instant place
                     pass
-                elif event.key == pygame.K_DOWN:
-                    # move piece downward faster
-                    pass
-                elif event.key == pygame.K_LEFT:
-                    # move piece left while held
-                    pass
-                elif event.key == pygame.K_RIGHT:
-                    # move piece right while held
-                    pass
-                elif event.key == pygame.K_E:
+                elif event.key == pygame.K_e:
                     # rotate clockwise
+                    board.currentPiece.RotateClockwise()
                     pass
-                elif event.key == pygame.K_Q:
+                elif event.key == pygame.K_q:
                     # rotate couter clockwise
+                    board.currentPiece.RotateCouterClockwise()
                     pass
-                #elif event.key == 
+            elif event.type == move_down_event:
+                board.currentPiece.MovePieceDown()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_DOWN]:
+            # move piece downward faster
+            board.currentPiece.MovePieceDown()
+            pass
+        if keys[pygame.K_LEFT]:
+            # move piece left while held
+            board.currentPiece.MovePieceLeft()
+            pass
+        if keys[pygame.K_RIGHT]:
+            # move piece right while held
+            board.currentPiece.MovePieceRight()
         # --- updates ---
         pygame.display.update()
-    
+        clock.tick(15)
+
+        #board.currentPiece.MovePieceDown()
 
 
-        #clock.tick(FPS)
         ## board.currentPiece.MoveDown()
         ## board.CheckCollisions
         ##
