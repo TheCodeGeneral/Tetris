@@ -134,13 +134,13 @@ class Piece(object):
     currentShape = None
     currentRoationIndex = 0
 
-    x = topLeftX
-    y = topLeftY
+    x = 3
+    y = 0
 
     def __init__(self, shape = None):
         if shape == None:
             self.currentPieceType = self.PIECE_INDEX[random.randint(0,6)]
-            self.currentShape = self.PIECE_TYPES[self.currentPieceType]
+            self.currentShape = self.PIECE_TYPES[self.currentPieceType][0]
         else:
             self.currentPieceType = shape
             self.currentShape = self.PIECE_TYPES[shape]
@@ -226,27 +226,12 @@ class Board(object):
         #if CheckIfLost(self):
            # holdPiece = None
         
-    
-    #def DrawCurrentPiece(self):
-    #    for x in range(len(self.currentPiece.currentPiece[0])):
-    #        for y in range(len(self.currentPiece.currentPiece)):
-    #            if self.currentPiece.currentPiece[y][x] == 'X':
-    #                # Start at second row in the middle
-    #                #rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize * 3, topLeftY + self.currentPiece.y + blockSize * 2, blockSize, blockSize)
-    #                rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize, topLeftY + self.currentPiece.y + blockSize, blockSize, blockSize)
-    #                pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
-    #                self.board[y][x].numOccupied = 1
-    #                self.board[y][x].PieceColor = self.currentPiece.GetColor()
-
     def DrawPiece(self, piece):
         for x in range(len(piece.currentShape[0])):
             for y in range(len(piece.currentShape)):
                 if piece.currentShape[y][x] == 'X':
-                    #rect = pygame.Rect(topLeftX + piece.x * blockSize, topLeftY + piece.y * blockSize)
-                    #pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
-                    rect = pygame.Rect(0,0,blockSize,blockSize)
+                    rect = pygame.Rect(topLeftX + (piece.x + x)* blockSize, topLeftY + (piece.y + y) * blockSize, blockSize, blockSize)
                     pygame.draw.rect(screen, piece.GetColor(), rect)
-
     
     # Draw the lines where each piece can be
     def DrawGrid(self):
@@ -274,15 +259,6 @@ class Board(object):
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
         # TODO Draw Score under box
         # TODO Draw current score in box
-
-    # Draw the positions that are occupied
-    #def DrawBoard(self):
-    #    self.DrawCurrentPiece()
-    #    for x in range(len(self.board[0])):
-    #        for y in range(len(self.board)):
-    #            if self.board[y][x].numOccupied >= 1:
-    #                rect = pygame.Rect(topLeftX + x * blockSize, topLeftY + y * blockSize, blockSize, blockSize)
-    #                pygame.draw.rect(screen, board[y][x].color, rect)
     
     def DrawBoard(self):
         self.DrawPiece(self.currentPiece)
