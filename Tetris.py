@@ -131,7 +131,7 @@ class Piece(object):
         6 : "T"
     }
     currentPieceType = None
-    currentPiece = None
+    currentShape = None
     currentRoationIndex = 0
 
     x = topLeftX
@@ -140,45 +140,45 @@ class Piece(object):
     def __init__(self, shape = None):
         if shape == None:
             self.currentPieceType = self.PIECE_INDEX[random.randint(0,6)]
-            self.currentPiece = self.PIECE_TYPES[self.currentPieceType]
+            self.currentShape = self.PIECE_TYPES[self.currentPieceType]
         else:
             self.currentPieceType = shape
-            self.currentPiece = self.PIECE_TYPES[shape]
+            self.currentShape = self.PIECE_TYPES[shape]
     def RotateClockwise(self):
         try:
             if self.currentPieceType != "Square":
                 # Try to choose previous rotation for piece type
-                self.currentPiece = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex + 1]
+                self.currentShape = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex + 1]
                 self.currentRoationIndex += 1
 
         except: # Expecting Index out of bounds
             # Choose lowest possible piece rotation
             self.currentRoationIndex = 0
-            self.currentPiece = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex]
+            self.currentShape = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex]
 
     def RotateCouterClockwise(self):
         try:
             if self.currentPieceType != "Square":
                 # Try to choose previous rotation for piece type
-                self.currentPiece = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex - 1]
+                self.currentShape = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex - 1]
                 self.currentRoationIndex -= 1
 
         except: # Expecting Index out of bounds
             # Choose highest possible piece rotation
             self.currentRoationIndex = len(self.PIECE_TYPES[self.currentPieceType]) - 1
-            self.currentPiece = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex]
+            self.currentShape = self.PIECE_TYPES[self.currentPieceType][self.currentRoationIndex]
     
     def GetColor(self):
         return self.PIECE_COLORS[self.currentPieceType]
 
     def MovePieceLeft(self):
         # TODO Check for collision
-        self.x += blockSize
+        self.x += 1
     def MovePieceRight(self):
         # TODO Check for collision
-        self.x -= blockSize
+        self.x -= 1
     def MovePieceDown(self):
-        self.y += blockSize
+        self.y += 1
         
     def CheckForCollision(self):
         pass
@@ -212,7 +212,8 @@ class Board(object):
                 
     def GenerateNewPiece(self, isHoldPiece):
         if not isHoldPiece:
-            self.oldPieces.append(self.currentPiece)
+            if self.currentPiece != None:
+                self.oldPieces.append(self.currentPiece)
             self.currentPiece = Piece()
             
         elif self.holdPiece == None:
@@ -226,17 +227,25 @@ class Board(object):
            # holdPiece = None
         
     
-    def DrawCurrentPiece(self):
-        for x in range(len(self.currentPiece.currentPiece[0])):
-            for y in range(len(self.currentPiece.currentPiece)):
-                if self.currentPiece.currentPiece[y][x] == 'X':
-                    # Start at second row in the middle
-                    #rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize * 3, topLeftY + self.currentPiece.y + blockSize * 2, blockSize, blockSize)
-                    rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize, topLeftY + self.currentPiece.y + blockSize, blockSize, blockSize)
-                    pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
-                    self.board[y][x].numOccupied = 1
-                    self.board[y][x].PieceColor = self.currentPiece.GetColor()
+    #def DrawCurrentPiece(self):
+    #    for x in range(len(self.currentPiece.currentPiece[0])):
+    #        for y in range(len(self.currentPiece.currentPiece)):
+    #            if self.currentPiece.currentPiece[y][x] == 'X':
+    #                # Start at second row in the middle
+    #                #rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize * 3, topLeftY + self.currentPiece.y + blockSize * 2, blockSize, blockSize)
+    #                rect = pygame.Rect(topLeftX + self.currentPiece.x + blockSize, topLeftY + self.currentPiece.y + blockSize, blockSize, blockSize)
+    #                pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
+    #                self.board[y][x].numOccupied = 1
+    #                self.board[y][x].PieceColor = self.currentPiece.GetColor()
 
+    def DrawPiece(self, piece):
+        for x in range(len(piece.currentShape[0])):
+            for y in range(len(piece.currentShape)):
+                if piece.currentShape[y][x] == 'X':
+                    #rect = pygame.Rect(topLeftX + piece.x * blockSize, topLeftY + piece.y * blockSize)
+                    #pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
+                    rect = pygame.Rect(0,0,blockSize,blockSize)
+                    pygame.draw.rect(screen, piece.GetColor(), rect)
 
     
     # Draw the lines where each piece can be
@@ -248,23 +257,38 @@ class Board(object):
                 
     
                 
-    def DrawHoldBox():
-        pass
+    def DrawHoldBox(self):
+        rect = pygame.Rect(0,0, 7 * blockSize, 7 * blockSize)
+        pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+        # TODO Draw Hold under box
+        # TODO Draaw Hold Piece in box
     
-    def DrawNextPieces():
-        pass
+    def DrawNextPieces(self):
+        rect = pygame.Rect(windowWidth - 7 * blockSize, 0, 7 * blockSize, 7 * blockSize)
+        pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+        # TODO Draw next pieces under box
+        # TODO Draw next piece in box
     
-    def DrawScoreBox():
-        pass
+    def DrawScoreBox(self):
+        rect = pygame.Rect(windowWidth // 2 - 2 * blockSize, 0, 4 * blockSize, 2 * blockSize)
+        pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+        # TODO Draw Score under box
+        # TODO Draw current score in box
+
     # Draw the positions that are occupied
-    def DrawBoard(self):
-        self.DrawCurrentPiece()
-        for x in range(len(self.board[0])):
-            for y in range(len(self.board)):
-                if self.board[y][x].numOccupied >= 1:
-                    rect = pygame.Rect(topLeftX + x * blockSize, topLeftY + y * blockSize, blockSize, blockSize)
-                    pygame.draw.rect(screen, board[y][x].color, rect)
+    #def DrawBoard(self):
+    #    self.DrawCurrentPiece()
+    #    for x in range(len(self.board[0])):
+    #        for y in range(len(self.board)):
+    #            if self.board[y][x].numOccupied >= 1:
+    #                rect = pygame.Rect(topLeftX + x * blockSize, topLeftY + y * blockSize, blockSize, blockSize)
+    #                pygame.draw.rect(screen, board[y][x].color, rect)
     
+    def DrawBoard(self):
+        self.DrawPiece(self.currentPiece)
+        for piece in self.oldPieces:
+            self.DrawPiece(piece)
+
     # TODO Draw where the piece would be if placed instantly
     def CalculatePieceGhostPostion(self):
         pass
@@ -312,7 +336,9 @@ if __name__ == "__main__":
         # --- events ---
         board.DrawGrid()
         board.DrawBoard()
-        
+        board.DrawHoldBox()
+        board.DrawNextPieces()
+        board.DrawScoreBox()
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 running = False
