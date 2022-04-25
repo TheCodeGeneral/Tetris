@@ -1,5 +1,6 @@
 #!\Tetris\Scripts\python
 from dataclasses import dataclass
+from operator import mod
 import pygame
 import random
 from collections import namedtuple 
@@ -18,6 +19,7 @@ topLeftY = windowHeight - playHeight
 
 move_down_event = pygame.USEREVENT
 end_game_event = pygame.USEREVENT + 1
+second_elapsed_event = pygame.USEREVENT + 2
  
 class Piece(object):
     # Shapes and their rotations
@@ -213,11 +215,17 @@ class Board(object):
     holdPiece = None
     nextPiece = None
     score = 0
+    linesComplete = 9
+    level = 0
+    moveDownTick = 0
 
     def __init__(self):
         self.currentPiece = Piece()
         self.nextPiece = Piece()
         self.holdPiece = None
+        self.linesComplete = 0
+        self.level = 0
+        self.ClearRows()
 
         self.OccupyBoard()
 
@@ -415,29 +423,47 @@ class Board(object):
                 rowsComplete.append(y)
         
         maxConsecutive = 0
-        try:
-            for i in range(1, len(rowsComplete)):
-                if rowsComplete[i - 1] + 1 == rowsComplete[i]:
-                    maxConsecutive += 1
-                else:
-                    maxConsecutive = 0
-            if maxConsecutive == 4:
-                # Apply tetris score modifer
-                pass
-            elif maxConsecutive == 3:
-                # Apply 3 row modifier
-                pass
-            elif maxConsecutive == 2:
-                # Apply 2 row modifer
-                pass
-        # expecting index out of bounds
-        except:
-            pass
+
+        for i in range(1, len(rowsComplete)):
+            if rowsComplete[i - 1] + 1 == rowsComplete[i]:
+                maxConsecutive += 1
+            else:
+                maxConsecutive = 0
+
+        # Update lines complete and set score modifer
+        if maxConsecutive == 4:
+            self.linesComplete += 8
+            modifier = 1200
+        elif maxConsecutive == 3:
+            self.linesComplete += 5
+            modifier = 300
+        elif maxConsecutive == 2:
+            self.linesComplete += 3
+            modifier = 100
+        else:
+            self.linesComplete += 1
+            modifier = 40
+        
+        # Update score
+        self.score += (len(rowsComplete) + 1) * modifier 
+        
+        # Update current level
+        if self.level >= 9 and self.linesComplete >= 100:
+            self.level += 1
+            self.linesComplete = 0
+        elif self.linesComplete >= (self.level + 1) * 10:
+            self.level += 1
+            self.linesComplete = 0
 
         # Remove complete rows and shift board down
         for y in rowsComplete:
             self.board.pop(y)
             self.board.insert(0, [BoardSquare((0,0,0), 0) for x in range(rowWidth)])
+
+        # Update drop rate
+        moveDownTick = int(((10 - self.level) * .05) * 1000)
+        pygame.time.set_timer(move_down_event, 0)
+        pygame.time.set_timer(move_down_event, moveDownTick)
 
     def MoveDown(self):
         self.UnoccupyBoard()
@@ -498,7 +524,7 @@ class Board(object):
         board.GenerateNewPiece(True)
 
 def EndGame():
-    pygame.event.post(end_game_event) 
+    pygame.event.post(pygame.event.Event(end_game_event)) 
 
 if __name__ == "__main__":
     # Initialize game window
@@ -514,7 +540,7 @@ if __name__ == "__main__":
     
     # Initialize block move timer
     moveDownTick = 1000
-    pygame.time.set_timer(move_down_event, moveDownTick)
+    pygame.time.set_timer(second_elapsed_event, 1000)
     
     while running:
 
