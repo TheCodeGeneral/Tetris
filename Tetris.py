@@ -11,6 +11,8 @@ playWidth = 300
 playHeight = 600  
 blockSize = 30
  
+rowWidth = 10
+rowHeight = 20
 topLeftX = (windowWidth - playWidth) // 2
 topLeftY = windowHeight - playHeight 
  
@@ -134,7 +136,7 @@ class Piece(object):
     currentRoationIndex = 0
 
     x = 3
-    y = 0
+    y = -1
 
     def __init__(self, shape = None):
         if shape == None:
@@ -178,6 +180,8 @@ class Piece(object):
         self.x += 1
     def MovePieceDown(self):
         self.y += 1
+    def MovePieceUp(self):
+        self.y -= 1
     def MovePiece(self, x, y):
         self.x = x
         self.y = y
@@ -186,24 +190,33 @@ class Piece(object):
 class BoardSquare(object):
     PieceColor = None
     numOccupied = None
+    PreviousColor = None
     def __init__(self, PieceColor, numOccupied):
         self.PieceColor = PieceColor
         self.numOccupied = numOccupied
+        self.PreviousColor = (0,0,0)
 
 class Board(object):
-    # Create 2d array of BoardSquares of size 10x20 for tetris board
+    # Create 2d array of BoardSquares of size rowWidth x RowHeight for tetris board
     # Num Occupied = 1 defines that space is occupied, 0 defines it is unoccupied, numOccupied > 1 means pieces are intersecting
-    board = [[BoardSquare((0,0,0), 0) for x in range(10)] for y in range(20)]
-    oldPieces = []
+    board = [[BoardSquare((0,0,0), 0) for x in range(rowWidth)] for y in range(rowHeight)]
     
     currentPiece = None
     holdPiece = None
+    nextPiece = None
     score = 0
+
+    def __init__(self):
+        self.currentPiece = Piece()
+        self.nextPiece = Piece()
+        self.holdPiece = None
+
+        self.OccupyBoard()
 
     # Checks if any squares have more than 1 piece in it
     def CheckInterSections(self):
-        for x in range(10):
-            for y in range(20):
+        for x in range(rowWidth):
+            for y in range(rowHeight):
                 if self.board[y][x].numOccupied > 1:
                     return True
         
@@ -214,43 +227,57 @@ class Board(object):
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
                 if self.currentPiece.currentShape[y][x] == 'X':
-                    if (self.currentPiece.x + x) >= 10 or (self.currentPiece.x + x) < 0 or (self.currentPiece.y + y) >= 19:
-                        return True        
+                    if (self.currentPiece.x + x) >= rowWidth or (self.currentPiece.x + x) < 0 or (self.currentPiece.y + y) >= rowHeight:
+                        return True
+        return False
+
+    def UnoccupyBoard(self):
+        num = 1
+        for x in range(len(self.currentPiece.currentShape[0])):
+            for y in range(len(self.currentPiece.currentShape)):
+                if self.currentPiece.currentShape[y][x] == 'X' and not self.CheckBoundaries():
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].numOccupied -= 1
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].PieceColor = self.board[y + self.currentPiece.y][x + self.currentPiece.x].PreviousColor
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].PreviousColor = (0,0,0)
+
+
+    
+    def OccupyBoard(self):
+        for x in range(len(self.currentPiece.currentShape[0])):
+            for y in range(len(self.currentPiece.currentShape)):
+                if self.currentPiece.currentShape[y][x] == 'X' and not self.CheckBoundaries():
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].numOccupied += 1
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].PreviousColor = self.board[y + self.currentPiece.y][x + self.currentPiece.x].PieceColor
+                    self.board[y + self.currentPiece.y][x + self.currentPiece.x].PieceColor = self.currentPiece.GetColor()
 
     # Returns True if location of piece is not occupied
     def GenerateNewPiece(self, isHoldPiece):
         if not isHoldPiece:
-            if self.currentPiece != None:
-                self.oldPieces.append(self.currentPiece)
-            self.currentPiece = Piece()
+            self.currentPiece = self.nextPiece
+            self.nextPiece = Piece()
             
         elif self.holdPiece == None:
-            self.holdPiece = self.currentPiece
-            self.currentPiece = Piece()
+            self.UnoccupyBoard()
+            self.holdPiece = Piece(self.currentPiece.currentPieceType)
+            self.currentPiece = self.nextPiece()
             
         else:
-            self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
+            temp = self.currentPiece
+            self.UnoccupyBoard()
+            self.currentPiece = Piece(self.holdPiece.currentPieceType)
+            self.holdPiece = Piece(temp.currentPieceType)
         
         if self.CheckInterSections():
             return False
         else:
             return True
         
-    def DrawPiece(self, piece):
-        for x in range(len(piece.currentShape[0])):
-            for y in range(len(piece.currentShape)):
-                if piece.currentShape[y][x] == 'X':
-                    rect = pygame.Rect(topLeftX + (piece.x + x)* blockSize, topLeftY + (piece.y + y) * blockSize, blockSize, blockSize)
-                    pygame.draw.rect(screen, piece.GetColor(), rect)
-    
     # Draw the lines where each piece can be
     def DrawGrid(self):
-        for x in range(topLeftX, topLeftX + 10 * blockSize, blockSize):
-            for y in range(topLeftY, topLeftY + 20 * blockSize, blockSize):
+        for x in range(topLeftX, topLeftX + rowWidth * blockSize, blockSize):
+            for y in range(topLeftY, topLeftY + rowHeight * blockSize, blockSize):
                 rect = pygame.Rect(x, y, blockSize, blockSize)
                 pygame.draw.rect(screen, (255, 255, 255), rect, 1)
-                
-    
                 
     def DrawHoldBox(self):
         rect = pygame.Rect(0,0, 7 * blockSize, 7 * blockSize)
@@ -271,9 +298,11 @@ class Board(object):
         # TODO Draw current score in box
     
     def DrawBoard(self):
-        self.DrawPiece(self.currentPiece)
-        for piece in self.oldPieces:
-            self.DrawPiece(piece)
+        for x in range(rowWidth):
+            for y in range(rowHeight):
+                if self.board[y][x].PieceColor != (0,0,0):
+                    rect = pygame.Rect(topLeftX + x * blockSize, topLeftY + y * blockSize, blockSize, blockSize)
+                    pygame.draw.rect(screen, self.board[y][x].PieceColor, rect)
 
     # TODO Draw where the piece would be if placed instantly
     def CalculatePieceGhostPostion(self):
@@ -304,28 +333,60 @@ class Board(object):
             pass
 
     def MoveDown(self):
+        intersections = False
+        self.UnoccupyBoard()
         self.currentPiece.MovePieceDown()
+        self.OccupyBoard()
         if self.CheckBoundaries() or self.CheckInterSections():
+            self.UnoccupyBoard()
+            self.currentPiece.MovePieceUp()
+            self.OccupyBoard()
             self.GenerateNewPiece(False)
+
+        return
+
     def MoveLeft(self):
+        self.UnoccupyBoard()
         self.currentPiece.MovePieceLeft()
-        if self.CheckBoundaries():
+        self.OccupyBoard()
+        if self.CheckBoundaries() or self.CheckInterSections():
+            self.UnoccupyBoard()
             self.currentPiece.MovePieceRight()
+            self.OccupyBoard()
+
+        return
         
     def MoveRight(self):
+        self.UnoccupyBoard()
         self.currentPiece.MovePieceRight()
-        if self.CheckBoundaries():
+        self.OccupyBoard()
+        if self.CheckBoundaries() or self.CheckInterSections():
+            self.UnoccupyBoard()
             self.currentPiece.MovePieceLeft()
+            self.OccupyBoard()
 
+        return
 
     def MovePiece(self, x, y):
         self.currentPiece.SetLocation(x, y)
 
     def RotateClockWise(self):
+        self.UnoccupyBoard()
         self.currentPiece.RotateClockwise()
+        self.OccupyBoard()
+        if self.CheckBoundaries() or self.CheckInterSections():
+            self.UnoccupyBoard()
+            self.currentPiece.RotateCouterClockwise()
+            self.OccupyBoard()
 
     def RotateCounterClockWise(self):
+        self.UnoccupyBoard()
         self.currentPiece.RotateCouterClockwise()
+        self.OccupyBoard()
+        if self.CheckBoundaries() or self.CheckInterSections():
+            self.UnoccupyBoard()
+            self.currentPiece.RotateClockwise()
+            self.OccupyBoard()
 
     def HoldPiece(self):
         if not board.GenerateNewPiece(True):
@@ -343,23 +404,16 @@ if __name__ == "__main__":
     
     # Initilize Board
     board = Board()
-    board.GenerateNewPiece(False)
     running = True
     
     # Initialize block move timer
     move_down_event = pygame.USEREVENT
     moveDownTick = 1000
     pygame.time.set_timer(move_down_event, moveDownTick)
-
     while running:
 
         # --- events ---
         screen.fill((0,0,0))
-        board.DrawGrid()
-        board.DrawBoard()
-        board.DrawHoldBox()
-        board.DrawNextPieces()
-        board.DrawScoreBox()
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 running = False
@@ -397,5 +451,10 @@ if __name__ == "__main__":
             board.MoveRight()
 
         # --- updates ---
+        board.DrawBoard()
+        board.DrawGrid()
+        board.DrawHoldBox()
+        board.DrawNextPieces()
+        board.DrawScoreBox()
         pygame.display.update()
-        clock.tick(15)
+        clock.tick(10)
