@@ -15,6 +15,9 @@ rowWidth = 10
 rowHeight = 20
 topLeftX = (windowWidth - playWidth) // 2
 topLeftY = windowHeight - playHeight 
+
+move_down_event = pygame.USEREVENT
+end_game_event = pygame.USEREVENT + 1
  
 class Piece(object):
     # Shapes and their rotations
@@ -285,6 +288,7 @@ class Board(object):
             self.currentPiece = Piece(self.holdPiece.currentPieceType)
             self.holdPiece = temp
         
+        board.ClearRows()
         self.OccupyBoard()
         if self.CheckIntersections():
             # New Piece is inside another end game
@@ -371,28 +375,39 @@ class Board(object):
         return (ghost.x, ghost.y)
 
     def ClearRows(self):
-        rowLength = len(self.board[0])
         rowsComplete = []
-        for x in range(rowLength):
-            numLines = 0
-            for y in range(len(self.board)):
-                if self.board[y][x].numOccupied >= 1:
-                    numLines += 1
-            if numLines == rowLength:
+        for y in range(rowHeight):
+            numInRow = 0
+            for x in range(rowWidth):
+                if self.board[y][x].numOccupied == 1:
+                    numInRow += 1
+            if numInRow == rowWidth:
                 rowsComplete.append(y)
-        tetrisCheck = 0
+        
+        maxConsecutive = 0
         try:
             for i in range(1, len(rowsComplete)):
                 if rowsComplete[i - 1] + 1 == rowsComplete[i]:
-                    tetrisCheck += 1
+                    maxConsecutive += 1
                 else:
-                    tetrisCheck = 0
-            if tetrisCheck == 4:
+                    maxConsecutive = 0
+            if maxConsecutive == 4:
                 # Apply tetris score modifer
+                pass
+            elif maxConsecutive == 3:
+                # Apply 3 row modifier
+                pass
+            elif maxConsecutive == 2:
+                # Apply 2 row modifer
                 pass
         # expecting index out of bounds
         except:
             pass
+
+        # Remove complete rows and shift board down
+        for y in rowsComplete:
+            self.board.pop(y)
+            self.board.insert(0, [BoardSquare((0,0,0), 0) for x in range(rowWidth)])
 
     def MoveDown(self):
         self.UnoccupyBoard()
@@ -434,6 +449,7 @@ class Board(object):
         self.currentPiece.RotateClockwise()
         self.OccupyBoard()
         if self.CheckBoundaries() or self.CheckIntersections():
+            # TODO Kick piece away from boarder/piece
             self.UnoccupyBoard()
             self.currentPiece.RotateCouterClockwise()
             self.OccupyBoard()
@@ -443,6 +459,7 @@ class Board(object):
         self.currentPiece.RotateCouterClockwise()
         self.OccupyBoard()
         if self.CheckBoundaries() or self.CheckIntersections():
+            # TODO Kick piece away from boarder/piece
             self.UnoccupyBoard()
             self.currentPiece.RotateClockwise()
             self.OccupyBoard()
@@ -462,16 +479,14 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     # Initilize Board
     board = Board()
+    ghostX, ghostY = board.CalculatePieceGhostPostion()
     running = True
     
     # Initialize block move timer
-    move_down_event = pygame.USEREVENT
     moveDownTick = 1000
     pygame.time.set_timer(move_down_event, moveDownTick)
     
-    end_game_event = pygame.USEREVENT + 1
     while running:
-        ghostX, ghostY = board.CalculatePieceGhostPostion()
 
         # Events
         for event in pygame.event.get():
@@ -515,9 +530,11 @@ if __name__ == "__main__":
             # move piece right while held
             board.MoveRight()
 
+
         # Draws
         screen.fill((0,0,0))
         board.DrawBoard()
+        ghostX, ghostY = board.CalculatePieceGhostPostion()
         board.DrawGhost(ghostX, ghostY)
         board.DrawGrid()
         board.DrawHoldBox()
