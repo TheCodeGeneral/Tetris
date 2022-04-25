@@ -350,8 +350,13 @@ class Board(object):
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
                 if self.currentPiece.currentShape[y][x] == 'X':
-                    rect = pygame.Rect(topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize, blockSize, blockSize)
-                    pygame.draw.rect(screen, self.currentPiece.GetColor(), rect)
+                    s = pygame.Surface((blockSize, blockSize))  # the size of your rect
+                    s.set_alpha(128)                # alpha level
+                    s.fill(self.currentPiece.GetColor())           # this fills the entire surface
+                    screen.blit(s, (topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize))    # (0,0) are the top-left coordinates
+
+                    #rect = pygame.Rect(topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize, blockSize, blockSize)
+                    #pygame.draw.rect(screen, pygame.Color(self.currentPiece.GetColor() + (1,)), rect)
 
 
 
