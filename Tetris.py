@@ -1,4 +1,4 @@
-#!\TermProject\Scripts\python
+#!\Tetris\Scripts\python
 from dataclasses import dataclass
 import pygame
 import random
@@ -135,6 +135,7 @@ class Piece(object):
     currentShape = None
     currentRoationIndex = 0
 
+    # Starting Position
     x = 3
     y = -1
 
@@ -144,7 +145,7 @@ class Piece(object):
             self.currentShape = self.PIECE_TYPES[self.currentPieceType][0]
         else:
             self.currentPieceType = shape
-            self.currentShape = self.PIECE_TYPES[shape]
+            self.currentShape = self.PIECE_TYPES[shape][0]
     def RotateClockwise(self):
         try:
             if self.currentPieceType != "Square":
@@ -216,7 +217,7 @@ class Board(object):
         self.OccupyBoard()
 
     # Checks if any squares have more than 1 piece in it
-    def CheckInterSections(self):
+    def CheckIntersections(self):
         for x in range(rowWidth):
             for y in range(rowHeight):
                 if self.board[y][x].numOccupied > 1:
@@ -255,21 +256,28 @@ class Board(object):
     # Returns True if location of piece is not occupied
     def GenerateNewPiece(self, isHoldPiece):
         if not isHoldPiece:
+            # Generate new piece
             self.currentPiece = self.nextPiece
             self.nextPiece = Piece()
             
         elif self.holdPiece == None:
+            # Store current piece for the first time
             self.UnoccupyBoard()
             self.holdPiece = Piece(self.currentPiece.currentPieceType)
-            self.currentPiece = self.nextPiece()
+            self.currentPiece = self.nextPiece
+            self.nextPiece = Piece()
+            self.OccupyBoard()
             
         else:
-            temp = self.currentPiece
+            # Swap current piece and hold piece
+            temp = Piece(self.currentPiece.currentPieceType)
             self.UnoccupyBoard()
+
             self.currentPiece = Piece(self.holdPiece.currentPieceType)
-            self.holdPiece = Piece(temp.currentPieceType)
+            self.holdPiece = temp
+            self.OccupyBoard()
         
-        if self.CheckInterSections():
+        if self.CheckIntersections():
             # New Piece is inside another end game
             EndGame()
         
@@ -281,14 +289,35 @@ class Board(object):
                 pygame.draw.rect(screen, (255, 255, 255), rect, 1)
                 
     def DrawHoldBox(self):
-        rect = pygame.Rect(0,0, 7 * blockSize, 7 * blockSize)
+        boxTopLeftX = blockSize
+        boxTopLeftY = 3 * blockSize
+        # Draw box
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+
+        # Draw Piece in box
+        if self.holdPiece is not None:
+            for x in range(len(self.holdPiece.currentShape[0])):
+                for y in range(len(self.holdPiece.currentShape)):
+                    if self.holdPiece.currentShape[y][x] == 'X':
+                        rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        pygame.draw.rect(screen, self.holdPiece.GetColor(), rect)
+                        pygame.draw.rect(screen, (255,255,255), rect, 1)
         # TODO Draw Hold under box
-        # TODO Draaw Hold Piece in box
     
     def DrawNextPieces(self):
-        rect = pygame.Rect(windowWidth - 7 * blockSize, 0, 7 * blockSize, 7 * blockSize)
+        boxTopLeftX = windowWidth - 5 * blockSize
+        boxTopLeftY = 3 * blockSize
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+
+        if self.nextPiece is not None:
+            for x in range(len(self.nextPiece.currentShape[0])):
+                for y in range(len(self.nextPiece.currentShape)):
+                    if self.nextPiece.currentShape[y][x] == 'X':
+                        rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        pygame.draw.rect(screen, self.nextPiece.GetColor(), rect)
+                        pygame.draw.rect(screen, (255,255,255), rect, 1)
         # TODO Draw next pieces under box
         # TODO Draw next piece in box
     
@@ -338,35 +367,29 @@ class Board(object):
         self.UnoccupyBoard()
         self.currentPiece.MovePieceDown()
         self.OccupyBoard()
-        if self.CheckBoundaries() or self.CheckInterSections():
+        if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceUp()
             self.OccupyBoard()
             self.GenerateNewPiece(False)
 
-        return
-
     def MoveLeft(self):
         self.UnoccupyBoard()
         self.currentPiece.MovePieceLeft()
         self.OccupyBoard()
-        if self.CheckBoundaries() or self.CheckInterSections():
+        if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceRight()
             self.OccupyBoard()
 
-        return
-        
     def MoveRight(self):
         self.UnoccupyBoard()
         self.currentPiece.MovePieceRight()
         self.OccupyBoard()
-        if self.CheckBoundaries() or self.CheckInterSections():
+        if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceLeft()
             self.OccupyBoard()
-
-        return
 
     def MovePiece(self, x, y):
         self.currentPiece.SetLocation(x, y)
@@ -375,7 +398,7 @@ class Board(object):
         self.UnoccupyBoard()
         self.currentPiece.RotateClockwise()
         self.OccupyBoard()
-        if self.CheckBoundaries() or self.CheckInterSections():
+        if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.RotateCouterClockwise()
             self.OccupyBoard()
@@ -384,7 +407,7 @@ class Board(object):
         self.UnoccupyBoard()
         self.currentPiece.RotateCouterClockwise()
         self.OccupyBoard()
-        if self.CheckBoundaries() or self.CheckInterSections():
+        if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.RotateClockwise()
             self.OccupyBoard()
@@ -414,8 +437,7 @@ if __name__ == "__main__":
     end_game_event = pygame.USEREVENT + 1
     while running:
 
-        # --- events ---
-        screen.fill((0,0,0))
+        # Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 running = False
@@ -436,6 +458,9 @@ if __name__ == "__main__":
                 elif event.key == pygame.K_q:
                     # rotate couter clockwise
                     board.RotateCounterClockWise()
+                elif event.key == pygame.K_UP:
+                    # Hold current piece
+                    board.HoldPiece()
 
             # Block move timed event
             elif event.type == move_down_event:
@@ -454,7 +479,8 @@ if __name__ == "__main__":
             # move piece right while held
             board.MoveRight()
 
-        # --- updates ---
+        # Draws
+        screen.fill((0,0,0))
         board.DrawBoard()
         board.DrawGrid()
         board.DrawHoldBox()
