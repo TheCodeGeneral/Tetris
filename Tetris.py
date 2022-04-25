@@ -305,33 +305,61 @@ class Board(object):
         boxTopLeftX = blockSize
         boxTopLeftY = 3 * blockSize
         # Draw box
-        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 4 * blockSize)
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 5 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+
+        # Draw "Hold Piece" above box
+        text = font.render("Hold Piece", True, (255, 255, 255))
+        textRect = text.get_rect()
+        textRect.x = boxTopLeftX
+        textRect.y = boxTopLeftY - blockSize
+
+        screen.blit(text, textRect)
 
         # Draw Piece in box
         if self.holdPiece is not None:
             for x in range(len(self.holdPiece.currentShape[0])):
                 for y in range(len(self.holdPiece.currentShape)):
                     if self.holdPiece.currentShape[y][x] == 'X':
-                        rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        # Center piece in box
+                        if self.holdPiece.currentPieceType == 'Square':
+                            rect = pygame.Rect((blockSize // 2) + boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        elif self.holdPiece.currentPieceType == 'I':
+                            rect = pygame.Rect((blockSize // 2) + boxTopLeftX + x * blockSize, (blockSize // 2) + boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        else:
+                            rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
                         pygame.draw.rect(screen, self.holdPiece.GetColor(), rect)
                         pygame.draw.rect(screen, (255,255,255), rect, 1)
-        # TODO Draw Hold under box
     
     def DrawNextPieces(self):
-        boxTopLeftX = windowWidth - 5 * blockSize
+        boxTopLeftX = windowWidth - 6 * blockSize
         boxTopLeftY = 3 * blockSize
-        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 4 * blockSize)
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 5 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+
+        # Draw "Next Piece" Above box
+        text = font.render("Next Piece", True, (255, 255, 255))
+        textRect = text.get_rect()
+        textRect.x = boxTopLeftX
+        textRect.y = boxTopLeftY - blockSize
+
+        screen.blit(text, textRect)
+
 
         if self.nextPiece is not None:
             for x in range(len(self.nextPiece.currentShape[0])):
                 for y in range(len(self.nextPiece.currentShape)):
                     if self.nextPiece.currentShape[y][x] == 'X':
-                        rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        # Center piece in box
+                        if self.nextPiece.currentPieceType == 'Square':
+                            rect = pygame.Rect((blockSize // 2) + boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        elif self.nextPiece.currentPieceType == 'I':
+                            rect = pygame.Rect((blockSize // 2) + boxTopLeftX + x * blockSize, (blockSize // 2) + boxTopLeftY + y * blockSize, blockSize, blockSize)
+                        else:
+                            rect = pygame.Rect(boxTopLeftX + x * blockSize, boxTopLeftY + y * blockSize, blockSize, blockSize)
+
                         pygame.draw.rect(screen, self.nextPiece.GetColor(), rect)
                         pygame.draw.rect(screen, (255,255,255), rect, 1)
-        # TODO Draw next pieces under box
     
     def DrawScoreBox(self):
         rect = pygame.Rect(windowWidth // 2 - 2 * blockSize, 0, 4 * blockSize, 2 * blockSize)
@@ -350,13 +378,10 @@ class Board(object):
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
                 if self.currentPiece.currentShape[y][x] == 'X':
-                    s = pygame.Surface((blockSize, blockSize))  # the size of your rect
-                    s.set_alpha(128)                # alpha level
-                    s.fill(self.currentPiece.GetColor())           # this fills the entire surface
-                    screen.blit(s, (topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize))    # (0,0) are the top-left coordinates
-
-                    #rect = pygame.Rect(topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize, blockSize, blockSize)
-                    #pygame.draw.rect(screen, pygame.Color(self.currentPiece.GetColor() + (1,)), rect)
+                    s = pygame.Surface((blockSize, blockSize)) 
+                    s.set_alpha(128) # Make ghost piece transparent
+                    s.fill(self.currentPiece.GetColor()) 
+                    screen.blit(s, (topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize))
 
 
 
@@ -478,7 +503,7 @@ def EndGame():
 if __name__ == "__main__":
     # Initialize game window
     pygame.init()
-    pygame.font.init()
+    font = pygame.font.Font('freesansbold.ttf', 25)
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
