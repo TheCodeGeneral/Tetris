@@ -264,7 +264,7 @@ class Board(object):
                     self.board[y + piece.y][x + piece.x].PieceColor = piece.GetColor()
 
     # Returns True if location of piece is not occupied
-    def GenerateNewPiece(self, isHoldPiece):
+    def GenerateNewPiece(self, isHoldPiece = False):
         if not isHoldPiece:
             # Generate new piece
             self.currentPiece = self.nextPiece
@@ -276,7 +276,6 @@ class Board(object):
             self.holdPiece = Piece(self.currentPiece.currentPieceType)
             self.currentPiece = self.nextPiece
             self.nextPiece = Piece()
-            self.OccupyBoard()
             
         else:
             # Swap current piece and hold piece
@@ -285,8 +284,8 @@ class Board(object):
 
             self.currentPiece = Piece(self.holdPiece.currentPieceType)
             self.holdPiece = temp
-            self.OccupyBoard()
         
+        self.OccupyBoard()
         if self.CheckIntersections():
             # New Piece is inside another end game
             EndGame()
@@ -360,7 +359,7 @@ class Board(object):
         ghost.RotateTo(self.currentPiece.currentRoationIndex)
         self.OccupyBoard(ghost)
 
-        while not self.CheckIntersections():
+        while not self.CheckBoundaries(ghost) and not self.CheckIntersections():
             self.UnoccupyBoard(ghost)
             ghost.MovePieceDown()
             self.OccupyBoard(ghost)
@@ -396,7 +395,6 @@ class Board(object):
             pass
 
     def MoveDown(self):
-        intersections = False
         self.UnoccupyBoard()
         self.currentPiece.MovePieceDown()
         self.OccupyBoard()
@@ -404,7 +402,7 @@ class Board(object):
             self.UnoccupyBoard()
             self.currentPiece.MovePieceUp()
             self.OccupyBoard()
-            self.GenerateNewPiece(False)
+            self.GenerateNewPiece()
 
     def MoveLeft(self):
         self.UnoccupyBoard()
@@ -425,7 +423,11 @@ class Board(object):
             self.OccupyBoard()
 
     def MovePiece(self, x, y):
+        self.UnoccupyBoard()
         self.currentPiece.MovePiece(x, y)
+        self.OccupyBoard()
+
+        self.GenerateNewPiece()
 
     def RotateClockWise(self):
         self.UnoccupyBoard()
@@ -460,7 +462,6 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     # Initilize Board
     board = Board()
-    ghostX, ghostY = board.CalculatePieceGhostPostion()
     running = True
     
     # Initialize block move timer
@@ -470,6 +471,7 @@ if __name__ == "__main__":
     
     end_game_event = pygame.USEREVENT + 1
     while running:
+        ghostX, ghostY = board.CalculatePieceGhostPostion()
 
         # Events
         for event in pygame.event.get():
@@ -488,16 +490,13 @@ if __name__ == "__main__":
                 elif event.key == pygame.K_e:
                     # rotate clockwise
                     board.RotateClockWise()
-                    ghostX, ghostY = board.CalculatePieceGhostPostion()
 
                 elif event.key == pygame.K_q:
                     # rotate couter clockwise
                     board.RotateCounterClockWise()
-                    ghostX, ghostY = board.CalculatePieceGhostPostion()
                 elif event.key == pygame.K_UP:
                     # Hold current piece
                     board.HoldPiece()
-                    ghostX, ghostY = board.CalculatePieceGhostPostion()
 
             # Block move timed event
             elif event.type == move_down_event:
@@ -511,12 +510,10 @@ if __name__ == "__main__":
         if keys[pygame.K_LEFT]:
             # move piece left while held
             board.MoveLeft()
-            ghostX, ghostY = board.CalculatePieceGhostPostion()
 
         if keys[pygame.K_RIGHT]:
             # move piece right while held
             board.MoveRight()
-            ghostX, ghostY = board.CalculatePieceGhostPostion()
 
         # Draws
         screen.fill((0,0,0))
