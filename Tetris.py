@@ -215,9 +215,10 @@ class Board(object):
     holdPiece = None
     nextPiece = None
     score = 0
-    linesComplete = 9
+    linesComplete = 0
     level = 0
     moveDownTick = 0
+    secondsElapsed = 0
 
     def __init__(self):
         self.currentPiece = Piece()
@@ -317,12 +318,7 @@ class Board(object):
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
 
         # Draw "Hold Piece" above box
-        text = font.render("Hold Piece", True, (255, 255, 255))
-        textRect = text.get_rect()
-        textRect.x = boxTopLeftX
-        textRect.y = boxTopLeftY - blockSize
-
-        screen.blit(text, textRect)
+        DrawText("Hold Piece", boxTopLeftX, boxTopLeftY - blockSize)
 
         # Draw Piece in box
         if self.holdPiece is not None:
@@ -340,20 +336,16 @@ class Board(object):
                         pygame.draw.rect(screen, (255,255,255), rect, 1)
     
     def DrawNextPieces(self):
+        # Draw next piece box
         boxTopLeftX = windowWidth - 6 * blockSize
         boxTopLeftY = 3 * blockSize
         rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 5 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
 
         # Draw "Next Piece" Above box
-        text = font.render("Next Piece", True, (255, 255, 255))
-        textRect = text.get_rect()
-        textRect.x = boxTopLeftX
-        textRect.y = boxTopLeftY - blockSize
+        DrawText("Next Piece", boxTopLeftX, boxTopLeftY - blockSize)
 
-        screen.blit(text, textRect)
-
-
+        # Draw next piece in box
         if self.nextPiece is not None:
             for x in range(len(self.nextPiece.currentShape[0])):
                 for y in range(len(self.nextPiece.currentShape)):
@@ -369,12 +361,41 @@ class Board(object):
                         pygame.draw.rect(screen, self.nextPiece.GetColor(), rect)
                         pygame.draw.rect(screen, (255,255,255), rect, 1)
     
-    def DrawScoreBox(self):
-        rect = pygame.Rect(windowWidth // 2 - 2 * blockSize, 0, 4 * blockSize, 2 * blockSize)
+    def DrawTime(self):
+        boxTopLeftX = windowWidth // 2 - 5 * blockSize
+        boxTopLeftY =  1.5 * blockSize
+
+        # Draw Time box
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 1.5 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
-        # TODO Draw Score under box
-        # TODO Draw current score in box
+        
+        # Draw "Time" above box
+        text = font.render("Time", True, (255, 255, 255))
+        textRect = text.get_rect()
+        textRect.x = boxTopLeftX + blockSize
+        textRect.y = boxTopLeftY - blockSize
     
+        screen.blit(text, textRect)
+
+        # Draw Time elapsed
+        DrawText(f"{self.secondsElapsed // 60:02}:{self.secondsElapsed % 60:02}", boxTopLeftX + blockSize, boxTopLeftY + 0.5 * blockSize)
+
+    def DrawScore(self):
+        boxTopLeftX = windowWidth // 2 + 1* blockSize
+        boxTopLeftY =  1.5 * blockSize
+
+        # Draw Score box
+        rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 4 * blockSize, 1.5 * blockSize)
+        pygame.draw.rect(screen, (255, 255, 255), rect, 1)
+        
+        # Draw "Score" above box
+        DrawText("Score", boxTopLeftX + blockSize, boxTopLeftY - blockSize)
+
+        # Draw score
+        DrawText(self.score,boxTopLeftX + blockSize, boxTopLeftY + 0.5 * blockSize)
+    
+
+
     def DrawBoard(self):
         for x in range(rowWidth):
             for y in range(rowHeight):
@@ -424,12 +445,18 @@ class Board(object):
         
         maxConsecutive = 0
 
-        for i in range(1, len(rowsComplete)):
-            if rowsComplete[i - 1] + 1 == rowsComplete[i]:
-                maxConsecutive += 1
-            else:
-                maxConsecutive = 0
+        temp = 1
+        if len(rowsComplete) > 1:
+            for i in range(1, len(rowsComplete)):
+                if rowsComplete[i - 1] + 1 == rowsComplete[i]:
+                    temp += 1
+                else:
+                    temp = 1
+                maxConsecutive = temp if temp > maxConsecutive else maxConsecutive
+        elif len(rowsComplete) == 1:
+            maxConsecutive = 1
 
+        modifier = 0
         # Update lines complete and set score modifer
         if maxConsecutive == 4:
             self.linesComplete += 8
@@ -440,12 +467,14 @@ class Board(object):
         elif maxConsecutive == 2:
             self.linesComplete += 3
             modifier = 100
-        else:
+        elif maxConsecutive == 1:
             self.linesComplete += 1
             modifier = 40
+        else:
+            modifier = 0
         
         # Update score
-        self.score += (len(rowsComplete) + 1) * modifier 
+        self.score += (self.level + 1) * modifier #+ (40 * (maxConsecutive - len(rowsComplete))) 
         
         # Update current level
         if self.level >= 9 and self.linesComplete >= 100:
@@ -523,13 +552,25 @@ class Board(object):
     def HoldPiece(self):
         board.GenerateNewPiece(True)
 
+def DrawText(text, x, y, color= (255, 255, 255)):
+    text = font.render(f"{text}", True, color)
+    textRect = text.get_rect()
+    textRect.x = x 
+    textRect.y = y 
+    screen.blit(text, textRect)
+
 def EndGame():
     pygame.event.post(pygame.event.Event(end_game_event)) 
 
+def GameOver(score):
+    screen.fill((0,0,0))
+
+def PauseMenu():
+    pass
 if __name__ == "__main__":
     # Initialize game window
     pygame.init()
-    font = pygame.font.Font('freesansbold.ttf', 25)
+    font = pygame.font.Font(pygame.font.get_default_font(), 25)
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
@@ -550,6 +591,9 @@ if __name__ == "__main__":
                 running = False
             elif event.type == end_game_event:
                 running = False
+            elif event.type == second_elapsed_event:
+                board.secondsElapsed += 1
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     # TODO Pause menu
@@ -595,6 +639,7 @@ if __name__ == "__main__":
         board.DrawGrid()
         board.DrawHoldBox()
         board.DrawNextPieces()
-        board.DrawScoreBox()
+        board.DrawScore()
+        board.DrawTime()
         pygame.display.update()
         clock.tick(10)
