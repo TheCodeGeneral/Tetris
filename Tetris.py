@@ -173,15 +173,17 @@ class Piece(object):
         return self.PIECE_COLORS[self.currentPieceType]
 
     def MovePieceLeft(self):
-        # TODO Check for collision
         self.x -= 1
+
     def MovePieceRight(self):
-        # TODO Check for collision
         self.x += 1
+
     def MovePieceDown(self):
         self.y += 1
+
     def MovePieceUp(self):
         self.y -= 1
+
     def MovePiece(self, x, y):
         self.x = x
         self.y = y
@@ -231,8 +233,8 @@ class Board(object):
                         return True
         return False
 
+    # Remove piece from board and retore the squares to their previous color
     def UnoccupyBoard(self):
-        num = 1
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
                 if self.currentPiece.currentShape[y][x] == 'X' and not self.CheckBoundaries():
@@ -241,7 +243,7 @@ class Board(object):
                     self.board[y + self.currentPiece.y][x + self.currentPiece.x].PreviousColor = (0,0,0)
 
 
-    
+    # Add piece to board and store their previous color
     def OccupyBoard(self):
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
@@ -268,9 +270,8 @@ class Board(object):
             self.holdPiece = Piece(temp.currentPieceType)
         
         if self.CheckInterSections():
-            return False
-        else:
-            return True
+            # New Piece is inside another end game
+            EndGame()
         
     # Draw the lines where each piece can be
     def DrawGrid(self):
@@ -389,11 +390,11 @@ class Board(object):
             self.OccupyBoard()
 
     def HoldPiece(self):
-        if not board.GenerateNewPiece(True):
-            # Game Over
-            pass
+        board.GenerateNewPiece(True)
 
- 
+def EndGame():
+    pygame.event.post(end_game_event) 
+
 if __name__ == "__main__":
     # Initialize game window
     pygame.init()
@@ -401,7 +402,6 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
-    
     # Initilize Board
     board = Board()
     running = True
@@ -410,12 +410,16 @@ if __name__ == "__main__":
     move_down_event = pygame.USEREVENT
     moveDownTick = 1000
     pygame.time.set_timer(move_down_event, moveDownTick)
+    
+    end_game_event = pygame.USEREVENT + 1
     while running:
 
         # --- events ---
         screen.fill((0,0,0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
+                running = False
+            elif event.type == end_game_event:
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
