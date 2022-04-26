@@ -310,7 +310,8 @@ class Board(object):
     def DrawHoldBox(self):
         boxTopLeftX = blockSize
         boxTopLeftY = 3 * blockSize
-        # Draw box
+        
+        # Draw hold box
         rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 5 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
 
@@ -333,9 +334,10 @@ class Board(object):
                         pygame.draw.rect(screen, (255,255,255), rect, 1)
     
     def DrawNextPieces(self):
-        # Draw next piece box
         boxTopLeftX = windowWidth - 6 * blockSize
         boxTopLeftY = 3 * blockSize
+
+        # Draw next piece box
         rect = pygame.Rect(boxTopLeftX, boxTopLeftY, 5 * blockSize, 4 * blockSize)
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
 
@@ -387,7 +389,7 @@ class Board(object):
         DrawText(self.score,boxTopLeftX + 0.25 * blockSize, boxTopLeftY + 0.5 * blockSize)
     
 
-
+    # Draw color of each square of board
     def DrawBoard(self):
         for x in range(rowWidth):
             for y in range(rowHeight):
@@ -395,6 +397,7 @@ class Board(object):
                     rect = pygame.Rect(topLeftX + x * blockSize, topLeftY + y * blockSize, blockSize, blockSize)
                     pygame.draw.rect(screen, self.board[y][x].PieceColor, rect)
 
+    # Draw where current piece would be if placed instantly
     def DrawGhost(self, ghostX, ghostY):
         for x in range(len(self.currentPiece.currentShape[0])):
             for y in range(len(self.currentPiece.currentShape)):
@@ -408,17 +411,21 @@ class Board(object):
 
     # Calculate where piece would be when dropped instantly
     def CalculatePieceGhostPostion(self):
+        # Remove current piece from board to remove potential conflicts
         self.UnoccupyBoard()
+        # Create copy of current piece
         ghost = Piece(self.currentPiece.currentPieceType)
         ghost.MovePiece(self.currentPiece.x, self.currentPiece.y)
         ghost.RotateTo(self.currentPiece.currentRoationIndex)
         self.OccupyBoard(ghost)
 
+        # While piece is not intersecting our out of bounds, move down
         while not self.CheckBoundaries(ghost) and not self.CheckIntersections():
             self.UnoccupyBoard(ghost)
             ghost.MovePieceDown()
             self.OccupyBoard(ghost)
 
+        # Remove copy and add original piece
         self.UnoccupyBoard(ghost)
         self.OccupyBoard()
         ghost.MovePieceUp()
@@ -426,6 +433,7 @@ class Board(object):
         return (ghost.x, ghost.y)
 
     def ClearRows(self):
+        # Check which rows are complete, append to list
         rowsComplete = []
         for y in range(rowHeight):
             numInRow = 0
@@ -435,8 +443,8 @@ class Board(object):
             if numInRow == rowWidth:
                 rowsComplete.append(y)
         
+        # Count number of consecutive rows
         maxConsecutive = 0
-
         temp = 1
         if len(rowsComplete) > 1:
             for i in range(1, len(rowsComplete)):
@@ -487,9 +495,11 @@ class Board(object):
         pygame.time.set_timer(move_down_event, moveDownTick)
 
     def MoveDown(self):
+        # Remove piece from board, move it down, add piece to board
         self.UnoccupyBoard()
         self.currentPiece.MovePieceDown()
         self.OccupyBoard()
+        # if piece is out of bounds or intersecting, move piece up
         if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceUp()
@@ -497,23 +507,29 @@ class Board(object):
             self.GenerateNewPiece()
 
     def MoveLeft(self):
+        # Remove piece from board, move it left, add piece to board
         self.UnoccupyBoard()
         self.currentPiece.MovePieceLeft()
         self.OccupyBoard()
+        # if piece is out of bounds or intersecting, move piece right
         if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceRight()
             self.OccupyBoard()
 
     def MoveRight(self):
+        # Remove piece from board, move it right, add piece to board
         self.UnoccupyBoard()
         self.currentPiece.MovePieceRight()
         self.OccupyBoard()
+        # if piece is out of bounds or intersecting, move piece left
         if self.CheckBoundaries() or self.CheckIntersections():
             self.UnoccupyBoard()
             self.currentPiece.MovePieceLeft()
             self.OccupyBoard()
 
+    # Move piece to set location
+    # Used for instant place
     def MovePiece(self, x, y):
         self.UnoccupyBoard()
         self.currentPiece.MovePiece(x, y)
@@ -521,6 +537,7 @@ class Board(object):
 
         self.GenerateNewPiece()
 
+    # Remove piece from board, rotate clockwise, add piece to board
     def RotateClockWise(self):
         self.UnoccupyBoard()
         self.currentPiece.RotateClockwise()
@@ -531,6 +548,7 @@ class Board(object):
             self.currentPiece.RotateCouterClockwise()
             self.OccupyBoard()
 
+    # Remove piece from board, rotate counter-clockwise, add piece to board
     def RotateCounterClockWise(self):
         self.UnoccupyBoard()
         self.currentPiece.RotateCouterClockwise()
@@ -541,9 +559,11 @@ class Board(object):
             self.currentPiece.RotateClockwise()
             self.OccupyBoard()
 
+    # Make current piece the held piece, and generate a new piece
     def HoldPiece(self):
         self.GenerateNewPiece(True)
 
+# Draw Text on screen at x, y using optional color and x/y is center of text
 def DrawText(text, x, y, color= (255, 255, 255), center = False):
     text = font.render(f"{text}", True, color)
     textRect = text.get_rect()
@@ -558,25 +578,26 @@ def DrawText(text, x, y, color= (255, 255, 255), center = False):
 def EndGame():
     pygame.event.post(pygame.event.Event(end_game_event)) 
 
+# Display Default Controls
 def Welcome():
     while True:
         screen.fill((0,0,0))
         DrawText("Tetris", windowWidth // 2, windowHeight * 0.15, (255, 0, 0), True)
         DrawText("Default Controls:", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
 
-        DrawText(f"Move Left: A or Left Arrow  Move Right: D or Right Arrow", windowWidth// 2, windowHeight * 0.35, (255, 255, 255), True)
-        DrawText(f"Move Down: S or Down Arrow  Instant Place: Space Bar", windowWidth // 2, windowHeight * 0.45, (255, 255, 255), True)
-        DrawText(f"Rotate Clockwise: E  Rotate Counter-Clockwise: Q", windowWidth // 2, windowHeight * 0.55, (255, 255, 255), True)
-        DrawText(f"Store Current Piece: W or Up Arrow", windowWidth // 2, windowHeight * 0.65, (255, 255, 255), True)
-        DrawText(f"Pause: Escape", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
-        DrawText(f"Press any key to continue...", windowWidth // 2, windowHeight * 0.85, (255, 255, 255), True)
+        DrawText("Move Left: A or Left Arrow  Move Right: D or Right Arrow", windowWidth// 2, windowHeight * 0.35, (255, 255, 255), True)
+        DrawText("Move Down: S or Down Arrow  Instant Place: Space Bar", windowWidth // 2, windowHeight * 0.45, (255, 255, 255), True)
+        DrawText("Rotate Clockwise: E  Rotate Counter-Clockwise: Q", windowWidth // 2, windowHeight * 0.55, (255, 255, 255), True)
+        DrawText("Store Current Piece: W or Up Arrow", windowWidth // 2, windowHeight * 0.65, (255, 255, 255), True)
+        DrawText("Pause: Escape", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
+        DrawText("Press any key to continue...", windowWidth // 2, windowHeight * 0.85, (255, 255, 255), True)
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
             elif event.type == pygame.KEYDOWN:
                 return
                 
-
         pygame.display.update()
 def GameOver(score):
     newGame = False
@@ -586,6 +607,7 @@ def GameOver(score):
         DrawText("Game Over", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
         DrawText(f"Final Score: {score}", windowWidth // 2, windowHeight * 0.50, (255, 255, 255), True)
         DrawText("New Game?", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
+
         if newGame:
             DrawText("Yes", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 0), True)
             DrawText("No", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 255), True)
@@ -596,16 +618,16 @@ def GameOver(score):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_KP_ENTER:
                     running = False
                     return newGame
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     newGame = True
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     newGame = False
                 
-
         pygame.display.update()
 
 def PauseMenu():
@@ -643,6 +665,7 @@ def PauseMenu():
                     else:
                         EndGame()
                         return
+
                 elif curPos != 3 and (event.key == pygame.K_s or event.key == pygame.K_DOWN):
                     curPos += 1
                 elif curPos != 0 and (event.key == pygame.K_w or event.key == pygame.K_UP):
@@ -667,7 +690,7 @@ def NewGame():
                 running = False
             if event.type == end_game_event:
                 running = False
-                return GameOver(board.score)  # TODO Pause menu
+                return GameOver(board.score) 
             elif event.type == second_elapsed_event:
                 board.secondsElapsed += 1
 
@@ -675,9 +698,8 @@ def NewGame():
                 if event.key == pygame.K_ESCAPE:
                     PauseMenu()
                 elif event.key == pygame.K_SPACE:
-                    board.MovePiece(ghostX, ghostY)
                     # instant place
-                    pass
+                    board.MovePiece(ghostX, ghostY)
                 elif event.key == pygame.K_e:
                     # rotate clockwise
                     board.RotateClockWise()
@@ -685,7 +707,7 @@ def NewGame():
                 elif event.key == pygame.K_q:
                     # rotate couter clockwise
                     board.RotateCounterClockWise()
-                elif event.key == pygame.K_UP:
+                elif event.key == pygame.K_UP or event.key == pygame.K_w:
                     # Hold current piece
                     board.HoldPiece()
 
@@ -695,14 +717,14 @@ def NewGame():
 
         # Check if key is held down for movement
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_DOWN] or keys[pygame.K_w]:
             # move piece downward faster
             board.MoveDown()
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             # move piece left while held
             board.MoveLeft()
 
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             # move piece right while held
             board.MoveRight()
 
@@ -719,6 +741,7 @@ def NewGame():
         board.DrawTime()
         pygame.display.update()
         clock.tick(10)
+    return False
 
 if __name__ == "__main__":
     # Initialize game window
