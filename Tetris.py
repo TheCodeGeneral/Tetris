@@ -1,4 +1,3 @@
-#!\Tetris\Scripts\python
 import pygame
 import random
  
@@ -401,7 +400,7 @@ class Board(object):
             for y in range(len(self.currentPiece.currentShape)):
                 if self.currentPiece.currentShape[y][x] == 'X':
                     s = pygame.Surface((blockSize, blockSize)) 
-                    s.set_alpha(128) # Make ghost piece transparent
+                    s.set_alpha(64) # Make ghost piece transparent
                     s.fill(self.currentPiece.GetColor()) 
                     screen.blit(s, (topLeftX + (x + ghostX) * blockSize, topLeftY + (y + ghostY) * blockSize))
 
@@ -559,6 +558,26 @@ def DrawText(text, x, y, color= (255, 255, 255), center = False):
 def EndGame():
     pygame.event.post(pygame.event.Event(end_game_event)) 
 
+def Welcome():
+    while True:
+        screen.fill((0,0,0))
+        DrawText("Tetris", windowWidth // 2, windowHeight * 0.15, (255, 0, 0), True)
+        DrawText("Default Controls:", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
+
+        DrawText(f"Move Left: A or Left Arrow  Move Right: D or Right Arrow", windowWidth// 2, windowHeight * 0.35, (255, 255, 255), True)
+        DrawText(f"Move Down: S or Down Arrow  Instant Place: Space Bar", windowWidth // 2, windowHeight * 0.45, (255, 255, 255), True)
+        DrawText(f"Rotate Clockwise: E  Rotate Counter-Clockwise: Q", windowWidth // 2, windowHeight * 0.55, (255, 255, 255), True)
+        DrawText(f"Store Current Piece: W or Up Arrow", windowWidth // 2, windowHeight * 0.65, (255, 255, 255), True)
+        DrawText(f"Pause: Escape", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
+        DrawText(f"Press any key to continue...", windowWidth // 2, windowHeight * 0.85, (255, 255, 255), True)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            elif event.type == pygame.KEYDOWN:
+                return
+                
+
+        pygame.display.update()
 def GameOver(score):
     newGame = False
     running = True
@@ -566,7 +585,7 @@ def GameOver(score):
         screen.fill((0,0,0))
         DrawText("Game Over", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
         DrawText(f"Final Score: {score}", windowWidth // 2, windowHeight * 0.50, (255, 255, 255), True)
-        DrawText("Continue?", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
+        DrawText("New Game?", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
         if newGame:
             DrawText("Yes", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 0), True)
             DrawText("No", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 255), True)
@@ -590,36 +609,44 @@ def GameOver(score):
         pygame.display.update()
 
 def PauseMenu():
-    paused = True
-    resume = True
+    curPos = 0
 
-    while paused:
+    while True:
         screen.fill((0,0,0))
         DrawText("Game Paused", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
 
-        if resume:
-            DrawText("Resume", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 0), True)
-            DrawText("Quit", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 255), True)
+        if curPos == 0:
+            DrawText("Resume", windowWidth // 2, windowHeight * 0.35, (255, 255, 0), True)
+            DrawText("Controls", windowWidth // 2, windowHeight * 0.45, (255, 255, 255), True)
+            DrawText("Quit", windowWidth // 2, windowHeight * 0.55, (255, 255, 255), True)
+        elif curPos == 1:
+            DrawText("Resume", windowWidth // 2, windowHeight * 0.35, (255, 255, 255), True)
+            DrawText("Controls", windowWidth // 2, windowHeight * 0.45, (255, 255, 0), True)
+            DrawText("Quit", windowWidth // 2, windowHeight * 0.55, (255, 255, 255), True)
         else:
-            DrawText("Resume", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 255), True)
-            DrawText("Quit", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 0), True)
+            DrawText("Resume", windowWidth // 2, windowHeight * 0.35, (255, 255, 255), True)
+            DrawText("Controls", windowWidth // 2, windowHeight * 0.45, (255, 255, 255), True)
+            DrawText("Quit", windowWidth // 2, windowHeight * 0.55, (255, 255, 0), True)
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
             elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_KP_ENTER:
-                    running = False
-                    if resume:
+                    if curPos == 0:
                         return 
+                    elif curPos == 1:
+                        Welcome()
                     else:
                         EndGame()
                         return
-                elif event.key == pygame.K_LEFT:
-                    resume = True
-                elif event.key == pygame.K_RIGHT:
-                    resume = False
-                
+                elif curPos != 3 and (event.key == pygame.K_s or event.key == pygame.K_DOWN):
+                    curPos += 1
+                elif curPos != 0 and (event.key == pygame.K_w or event.key == pygame.K_UP):
+                    curPos -= 1
 
         pygame.display.update()
 
@@ -696,9 +723,11 @@ def NewGame():
 if __name__ == "__main__":
     # Initialize game window
     pygame.init()
-    font = pygame.font.Font(pygame.font.get_default_font(), 25)
+    font = pygame.font.SysFont('consolas', 25)
     screen = pygame.display.set_mode((windowWidth,windowHeight))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
+    
+    Welcome()
     while NewGame():
         pass
