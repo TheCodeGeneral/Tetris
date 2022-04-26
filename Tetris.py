@@ -1,8 +1,6 @@
 #!\Tetris\Scripts\python
-from dataclasses import dataclass
 import pygame
 import random
-from collections import namedtuple 
  
 # GLOBALS VARS
 windowWidth = 800
