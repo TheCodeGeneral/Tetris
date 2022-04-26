@@ -1,6 +1,5 @@
 #!\Tetris\Scripts\python
 from dataclasses import dataclass
-from operator import mod
 import pygame
 import random
 from collections import namedtuple 
@@ -209,7 +208,7 @@ class BoardSquare(object):
 class Board(object):
     # Create 2d array of BoardSquares of size rowWidth x RowHeight for tetris board
     # Num Occupied = 1 defines that space is occupied, 0 defines it is unoccupied, numOccupied > 1 means pieces are intersecting
-    board = [[BoardSquare((0,0,0), 0) for x in range(rowWidth)] for y in range(rowHeight)]
+    board = None
     
     currentPiece = None
     holdPiece = None
@@ -221,6 +220,7 @@ class Board(object):
     secondsElapsed = 0
 
     def __init__(self):
+        self.board = [[BoardSquare((0,0,0), 0) for x in range(rowWidth)] for y in range(rowHeight)] 
         self.currentPiece = Piece()
         self.nextPiece = Piece()
         self.holdPiece = None
@@ -297,7 +297,7 @@ class Board(object):
             self.currentPiece = Piece(self.holdPiece.currentPieceType)
             self.holdPiece = temp
         
-        board.ClearRows()
+        self.ClearRows()
         self.OccupyBoard()
         if self.CheckIntersections():
             # New Piece is inside another end game
@@ -370,12 +370,7 @@ class Board(object):
         pygame.draw.rect(screen, (255, 255, 255), rect, 1)
         
         # Draw "Time" above box
-        text = font.render("Time", True, (255, 255, 255))
-        textRect = text.get_rect()
-        textRect.x = boxTopLeftX + blockSize
-        textRect.y = boxTopLeftY - blockSize
-    
-        screen.blit(text, textRect)
+        DrawText("Time", boxTopLeftX + blockSize, boxTopLeftY - blockSize)
 
         # Draw Time elapsed
         DrawText(f"{self.secondsElapsed // 60:02}:{self.secondsElapsed % 60:02}", boxTopLeftX + blockSize, boxTopLeftY + 0.5 * blockSize)
@@ -392,7 +387,7 @@ class Board(object):
         DrawText("Score", boxTopLeftX + blockSize, boxTopLeftY - blockSize)
 
         # Draw score
-        DrawText(self.score,boxTopLeftX + blockSize, boxTopLeftY + 0.5 * blockSize)
+        DrawText(self.score,boxTopLeftX + 0.25 * blockSize, boxTopLeftY + 0.5 * blockSize)
     
 
 
@@ -550,37 +545,62 @@ class Board(object):
             self.OccupyBoard()
 
     def HoldPiece(self):
-        board.GenerateNewPiece(True)
+        self.GenerateNewPiece(True)
 
-def DrawText(text, x, y, color= (255, 255, 255)):
+def DrawText(text, x, y, color= (255, 255, 255), center = False):
     text = font.render(f"{text}", True, color)
     textRect = text.get_rect()
-    textRect.x = x 
-    textRect.y = y 
+    if center:
+        textRect.centerx = x
+        textRect.centery = y
+    else:
+        textRect.x = x 
+        textRect.y = y 
     screen.blit(text, textRect)
 
 def EndGame():
     pygame.event.post(pygame.event.Event(end_game_event)) 
 
 def GameOver(score):
-    screen.fill((0,0,0))
+    newGame = False
+    running = True
+    while running:
+        screen.fill((0,0,0))
+        DrawText("Game Over", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
+        DrawText(f"Final Score: {score}", windowWidth // 2, windowHeight * 0.50, (255, 255, 255), True)
+        DrawText("Continue?", windowWidth // 2, windowHeight * 0.75, (255, 255, 255), True)
+        if newGame:
+            DrawText("Yes", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 0), True)
+            DrawText("No", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 255), True)
+        else:
+            DrawText("Yes", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 255), True)
+            DrawText("No", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 0), True)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_KP_ENTER:
+                    running = False
+                    return newGame
+                elif event.key == pygame.K_LEFT:
+                    newGame = True
+                elif event.key == pygame.K_RIGHT:
+                    newGame = False
+                
+
+        pygame.display.update()
+
 
 def PauseMenu():
     pass
-if __name__ == "__main__":
-    # Initialize game window
-    pygame.init()
-    font = pygame.font.Font(pygame.font.get_default_font(), 25)
-    screen = pygame.display.set_mode((windowWidth,windowHeight))
-    pygame.display.set_caption("Tetris")
-    clock = pygame.time.Clock()
+def NewGame():
     # Initilize Board
     board = Board()
     ghostX, ghostY = board.CalculatePieceGhostPostion()
     running = True
     
     # Initialize block move timer
-    moveDownTick = 1000
     pygame.time.set_timer(second_elapsed_event, 1000)
     
     while running:
@@ -589,14 +609,14 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 running = False
-            elif event.type == end_game_event:
+            if event.type == end_game_event:
                 running = False
+                return GameOver(board.score)  # TODO Pause menu
             elif event.type == second_elapsed_event:
                 board.secondsElapsed += 1
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    # TODO Pause menu
                     running = False
                 elif event.key == pygame.K_SPACE:
                     board.MovePiece(ghostX, ghostY)
@@ -643,3 +663,13 @@ if __name__ == "__main__":
         board.DrawTime()
         pygame.display.update()
         clock.tick(10)
+
+if __name__ == "__main__":
+    # Initialize game window
+    pygame.init()
+    font = pygame.font.Font(pygame.font.get_default_font(), 25)
+    screen = pygame.display.set_mode((windowWidth,windowHeight))
+    pygame.display.set_caption("Tetris")
+    clock = pygame.time.Clock()
+    while NewGame():
+        pass
