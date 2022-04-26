@@ -591,9 +591,40 @@ def GameOver(score):
 
         pygame.display.update()
 
-
 def PauseMenu():
-    pass
+    paused = True
+    resume = True
+
+    while paused:
+        screen.fill((0,0,0))
+        DrawText("Game Paused", windowWidth // 2, windowHeight * 0.25, (255, 0, 0), True)
+
+        if resume:
+            DrawText("Resume", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 0), True)
+            DrawText("Quit", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 255), True)
+        else:
+            DrawText("Resume", windowWidth * 0.33, windowHeight * 0.75, (255, 255, 255), True)
+            DrawText("Quit", windowWidth * 0.66, windowHeight * 0.75, (255, 255, 0), True)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_KP_ENTER:
+                    running = False
+                    if resume:
+                        return 
+                    else:
+                        EndGame()
+                        return
+                elif event.key == pygame.K_LEFT:
+                    resume = True
+                elif event.key == pygame.K_RIGHT:
+                    resume = False
+                
+
+        pygame.display.update()
+
 def NewGame():
     # Initilize Board
     board = Board()
@@ -617,7 +648,7 @@ def NewGame():
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    running = False
+                    PauseMenu()
                 elif event.key == pygame.K_SPACE:
                     board.MovePiece(ghostX, ghostY)
                     # instant place
